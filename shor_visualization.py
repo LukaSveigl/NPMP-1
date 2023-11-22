@@ -8,7 +8,7 @@ search = 15
 
 def c_amod15(base: int, itt_count: int) -> ControlledGate:
     U = QuantumCircuit(4)
-    for _ in range(itt_count):
+    for _ in range(2 ** itt_count):
         for swap in [(2, 3), (1, 2), (0, 1)]:
             U.swap(*swap)
 
@@ -16,7 +16,7 @@ def c_amod15(base: int, itt_count: int) -> ControlledGate:
             U.x(q)
 
     U = U.to_gate()
-    U.name = f'{base}^{itt_count} mod 15'
+    U.name = f'{base}^(2^{itt_count}) mod 15'
     return U.control()
 
 def shors_algorithm(n, m, a):
@@ -27,9 +27,8 @@ def shors_algorithm(n, m, a):
 
     qc.barrier()
 
-    for x in n_range:
-        exponent = 2 ** x
-        qc.append(c_amod15(a, exponent), [x, *list(range(n, n + m))])
+    for itt in n_range[::-1]:
+        qc.append(c_amod15(a, itt), [itt, *list(range(n, n + m))])
 
     qc.barrier()
 
