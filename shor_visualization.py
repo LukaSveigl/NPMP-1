@@ -15,32 +15,40 @@ def calculate_shor_params(search: int) -> tuple[int, int, int]:
 
     return n, n, a
 
-def get_u_door(base: int, itt_count: int, num_qubits: int, search: int) -> ControlledGate:
-    U = QuantumCircuit(num_qubits)
-    for _ in range(2 ** itt_count):
+def get_u_gate(base: int, n: int, nq: int, s: int) -> ControlledGate:
+    U = QuantumCircuit(nq)
+    for _ in range(2 ** n):
         for swap in [(2, 3), (1, 2), (0, 1)]:
             U.swap(*swap)
 
         U.x(0)
 
     U = U.to_gate()
-    U.name = f'{base}^(2^{itt_count})mod{search}'
+    U.name = f'{base}^(2^{n}) mod {s}'
     return U.control()
+
 
 def shors_algorithm(n: int, m: int, a: int, search: int):
     qc = QuantumCircuit(n + m, n)
     n_range = np.arange(n)
     qc.h(n_range)
-    qc.x(n+m-1)
+    qc.x(n + m - 1)
 
     qc.barrier()
 
     for itt in n_range:
-        qc.append(get_u_door(a, itt, n, search), [itt, *list(range(n, n + m))])
+        qc.append(
+            get_u_gate(a, itt, n, search),
+            [itt, *list(range(n, n + m))]
+        )
 
     qc.barrier()
 
-    qc.append(QFT(len(range(n)), do_swaps=False).inverse(), range(n))
+    qc.append(
+        QFT(len(range(n)), do_swaps=False).inverse(),
+        range(n)
+    )
+
     qc.measure(n_range, n_range)
     return qc
 
@@ -50,6 +58,7 @@ for file_path in [f'./circuits/shor_{s}.pdf' for s in search_list]:
     if os.path.exists(file_path):
         os.remove(file_path)
 
+print(f'{"Search":<10}{"a":<5}{"n":<5}{"p":<5}{"q":<5}')
 for search in search_list:
     n, m, a = calculate_shor_params(search)
     circuit = shors_algorithm(n, m, a, search)
@@ -68,7 +77,8 @@ for search in search_list:
     if found_factors:
         factors = [x for x in found_factors]
         factors.sort()
-        print(f'Search: {search}: factors: {tuple(factors)}')
+        p, q = tuple(factors)
+        print(f'{search:<10}{a:<5}{n:<5}{p:<5}{q:<5}')
 
         fig = circuit.draw(output='mpl', fold=1000)
         if fig is not None:
