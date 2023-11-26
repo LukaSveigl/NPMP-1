@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 from qiskit.circuit import ControlledGate
 from qiskit import QuantumCircuit, Aer, execute
 from qiskit.circuit.library import QFT
@@ -23,7 +24,7 @@ def get_u_door(base: int, itt_count: int, num_qubits: int, search: int) -> Contr
         U.x(0)
 
     U = U.to_gate()
-    U.name = f'{base}^(2^{itt_count}) mod {search}'
+    U.name = f'{base}^(2^{itt_count})mod{search}'
     return U.control()
 
 def shors_algorithm(n: int, m: int, a: int, search: int):
@@ -34,7 +35,7 @@ def shors_algorithm(n: int, m: int, a: int, search: int):
 
     qc.barrier()
 
-    for itt in n_range[::-1]:
+    for itt in n_range:
         qc.append(get_u_door(a, itt, n, search), [itt, *list(range(n, n + m))])
 
     qc.barrier()
@@ -44,8 +45,8 @@ def shors_algorithm(n: int, m: int, a: int, search: int):
     return qc
 
 
-search_list = [15, 21, 35, 65, 391]
-for file_path in [f'./circuits/shor_{s}.png' for s in search_list]:
+search_list = [15, 35, 65, 91, 391]
+for file_path in [f'./circuits/shor_{s}.pdf' for s in search_list]:
     if os.path.exists(file_path):
         os.remove(file_path)
 
@@ -53,7 +54,7 @@ for search in search_list:
     n, m, a = calculate_shor_params(search)
     circuit = shors_algorithm(n, m, a, search)
     simulator = Aer.get_backend('qasm_simulator')
-    qresult = execute(circuit, backend=simulator, shots=1000).result().get_counts(circuit)
+    qresult = execute(circuit, backend=simulator, shots=5000).result().get_counts(circuit)
 
     found_factors = set()
     for res in qresult:
@@ -68,4 +69,9 @@ for search in search_list:
         factors = [x for x in found_factors]
         factors.sort()
         print(f'Search: {search}: factors: {tuple(factors)}')
-        fig = circuit.draw(output='mpl', filename=f'./circuits/shor_{search}.png')
+
+        fig = circuit.draw(output='mpl', fold=1000)
+        if fig is not None:
+            pdf_filename = f'./circuits/shor_{search}.pdf'
+            plt.savefig(pdf_filename, format='pdf', bbox_inches='tight')
+            plt.close(fig)
