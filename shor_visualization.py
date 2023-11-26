@@ -7,6 +7,7 @@ from qiskit.circuit.library import QFT
 
 np.random.seed(14)
 
+
 def calculate_shor_params(search: int) -> tuple[int, int, int]:
     n = int(np.ceil(np.log2(search)))
     a = np.random.randint(2, search - 1)
@@ -14,6 +15,7 @@ def calculate_shor_params(search: int) -> tuple[int, int, int]:
         a = np.random.randint(2, search - 1)
 
     return n, n, a
+
 
 def get_u_gate(base: int, n: int, nq: int, s: int) -> ControlledGate:
     U = QuantumCircuit(nq)
